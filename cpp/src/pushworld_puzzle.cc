@@ -14,6 +14,7 @@
 
 #include "pushworld_puzzle.h"
 
+#include <iostream>
 #include <algorithm>  // min, max
 #include <boost/algorithm/string.hpp>
 #include <fstream>
@@ -193,19 +194,25 @@ PushWorldPuzzle::PushWorldPuzzle(const std::string& filename) {
   int line_idx = 0;
   int x, y;
   int elems_per_row;
+  int load_file = 0;
 
   std::map<std::string, PointSet> obj_pixels;
-  std::vector<std::string> line_elems, cell_elems;
+  std::vector<std::string> line_elems, cell_elems; 
 
-  // Parse the file, loading all objects and their pixels.
-  std::ifstream pw_file(filename);
+  if (load_file == 0) {
+    std::vector<std::string> puzzle_string_lines;
+    //std::string puzzle_string = ". AW AW AW AW AW AW AW AW AW AWX. AW AW AW AW AW AW AW AW AW AWX.  .  .  .  .  .  .  .  .  .  .X.  .  M0 M0 .  .  .  .  .  .  .X.  .  M0 M0 .  .  .  .  .  .  .X.  .  .  .  . G0 G0  .  .  .  .X.  .  .  .  .  G0 G0+M1 M1 M1 M1 M1X.  .  .  .  .  .  .  .  .  .  M1X.  .  A  .  .  .  M1 M1 M1 M1 M1X.  .  .  .  .  .  M1 .  .  .  .X.  .  .  .  .  .  M1 M1 M1 M1 M1";
+    std::string puzzle_string = filename;
+    boost::split(puzzle_string_lines, puzzle_string, boost::is_any_of("X"));
+    for(int idx = 0; idx < puzzle_string_lines.size(); idx++) {     
+      y = idx + 1;
 
-  if (pw_file) {  // opened successfully
-    while (getline(pw_file, line)) {
-      y = line_idx + 1;
-
-      boost::trim(line);
-      boost::split(line_elems, line, boost::is_any_of(" "),
+      boost::trim(puzzle_string_lines[idx]);
+      
+      //std::cout << puzzle_string_lines[idx];
+      //std::cout << "\n";
+      
+      boost::split(line_elems, puzzle_string_lines[idx], boost::is_any_of(" "),
                    boost::token_compress_on);
 
       if (y == 1) {
@@ -229,11 +236,50 @@ PushWorldPuzzle::PushWorldPuzzle(const std::string& filename) {
           }
         }
       }
-      line_idx++;
     }
-    pw_file.close();
-  } else {
-    throw std::invalid_argument("Unable to open file");
+  }
+  
+  if (load_file == 1) {
+    std::ifstream pw_file(filename);
+    if (pw_file) {  // opened successfully
+      while (getline(pw_file, line)) {     
+        y = line_idx + 1;
+
+        boost::trim(line);
+      
+        //std::cout << line;
+        //std::cout << "\n";
+      
+        boost::split(line_elems, line, boost::is_any_of(" "),
+                     boost::token_compress_on);
+
+        if (y == 1) {
+          elems_per_row = line_elems.size();
+        } else if (line_elems.size() == 0) {
+          continue;  // ignore linebreaks
+        } else if (elems_per_row != line_elems.size()) {
+          throw std::invalid_argument(
+              "Rows do not contain the same number of elements.");
+        }
+
+        for (x = 1; x <= line_elems.size(); x++) {
+          boost::split(cell_elems, line_elems[x - 1], boost::is_any_of("+"),
+                       boost::token_compress_on);
+
+          for (int k = 0; k < cell_elems.size(); k++) {
+            elem_id = cell_elems[k];
+            boost::to_lower(elem_id);
+            if (elem_id != ".") {
+              obj_pixels[elem_id].insert(Point{x, y});
+            }
+          }
+        }
+        line_idx++;
+      }
+      pw_file.close();
+    } else {
+      throw std::invalid_argument("Unable to open file");
+    }
   }
 
   if (obj_pixels.find("a") == obj_pixels.end())
@@ -461,6 +507,7 @@ RelativeState PushWorldPuzzle::getNextState(const State& state,
 
 bool PushWorldPuzzle::satisfiesGoal(const State& state) const {
   int goal_pos;
+   
   for (int i = 0; i < m_goal.size();) {
     goal_pos = m_goal[i];
     if (goal_pos != state[++i]) return false;

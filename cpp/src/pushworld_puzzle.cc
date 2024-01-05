@@ -328,7 +328,7 @@ PushWorldPuzzle::PushWorldPuzzle(const std::string& filename) {
       obj_pixels[elem_id] = pixels;
     }
 
-    if (elem_id[0] == 'g') {
+    if (elem_id[0] == 'g' && elem_id[1] != 'a') {
       goals.push_back(elem_id);
       moveable_id = elem_id;
 
@@ -341,6 +341,10 @@ PushWorldPuzzle::PushWorldPuzzle(const std::string& filename) {
 
       objects.push_back(moveable_id);
     }
+    
+    if (elem_id == "ga") {
+    	a_goal = point_to_position(object_positions[elem_id]);
+    } 
   }
 
   const auto num_goal_entities = goals.size();
@@ -507,6 +511,8 @@ RelativeState PushWorldPuzzle::getNextState(const State& state,
 
 bool PushWorldPuzzle::satisfiesGoal(const State& state) const {
   int goal_pos;
+   
+  if (state[0] != a_goal) return false;
    
   for (int i = 0; i < m_goal.size();) {
     goal_pos = m_goal[i];

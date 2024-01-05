@@ -172,6 +172,7 @@ class PushWorldPuzzle {
 
   // m_goal[i] contains the target value of m_initial_state[i+1].
   Goal m_goal;
+  Position2D a_goal;
 
   ObjectCollisions m_object_collisions;
 
